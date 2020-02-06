@@ -19,7 +19,6 @@ def cross_validate(
   fit_params={},
   cv=5,
   standardize=False,
-  random_seed=42,
   stratify_on_target=True
 ):
     """
@@ -27,7 +26,7 @@ def cross_validate(
 
 
     """
-    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_seed)
+    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     proba_metrics = [x for x in scoring if x in all_proba_metrics]
     non_proba_metrics = [x for x in scoring if x in all_non_proba_metrics]
 
@@ -90,12 +89,12 @@ def report_single_model_metrics(scores, metrics=['roc_auc', 'accuracy', 'precisi
     return pd.DataFrame(rows)
 
 
-def report_grid_results(X, y, estimator, param_grid, scoring='roc_auc', cv=5, return_train_score=True):
+def report_grid_results(X, y, estimator, param_grid, scoring='roc_auc', return_train_score=True):
     gr = GridSearchCV(
         estimator=estimator,
         param_grid=param_grid,
         scoring=scoring,
-        cv=cv,
+        cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
         return_train_score=return_train_score
     )
     gr.fit(X, y)
@@ -114,17 +113,21 @@ def run_pipeline(
     features,
     estimator,
     param_grid,
-    standardize=False
+    standardize=False,
 ):
     # get matching train/test split with new feature set
     X, y = raw_data[features], raw_data['third_reading']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=99, stratify=y)
+
+    if standardize:
+      scaler = StandardScaler()
+      X_train = scaler.fit_transform(X_train)
     # optimize parameters
     _, best_params = report_grid_results(
         X_train,
         y_train,
         estimator(),
-        param_grid=param_grid
+        param_grid=param_grid,
     )
     # score optimal model
     scores_tuned = cross_validate(
@@ -133,8 +136,7 @@ def run_pipeline(
         y_train,
         fit_params=best_params,
         scoring=['roc_auc', 'accuracy', 'precision'],
-        cv=5,
-        standardize=standardize
+        standardize=False
     )
     print('Best params:', best_params)
     # return formatted results
