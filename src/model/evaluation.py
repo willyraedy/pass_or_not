@@ -47,8 +47,8 @@ def report_grid_results(X, y, estimator, param_grid, scoring='roc_auc', cv=5, re
 def run_pipeline(
     raw_data,
     features,
-    estimator=KNeighborsClassifier(),
-    param_grid={ 'n_neighbors': range(1, 21), 'weights': ['uniform', 'distance']}
+    estimator,
+    param_grid
 ):
     # get matching train/test split with new feature set
     X, y = raw_data[features], raw_data['third_reading']
@@ -57,17 +57,18 @@ def run_pipeline(
     _, best_params = report_grid_results(
         X_train,
         y_train,
-        estimator,
+        estimator(),
         param_grid=param_grid
     )
     # score optimal model
     scores_tuned = cross_validate(
-        KNeighborsClassifier(**best_params),
+        estimator(**best_params),
         X_train,
         y_train,
         return_train_score=True,
         scoring=['roc_auc', 'accuracy', 'precision'],
         cv=5
     )
+    print('Best params:', best_params)
     # return formatted results
     return report_single_model_metrics(scores_tuned)
