@@ -60,8 +60,8 @@ def cross_validate(
           out_sample_preds = fit.predict_proba(X_val)
           for metric in proba_metrics:
             score_fn = getattr(metrics, metric + '_score')
-            results['test_' + metric].append(score_fn(y_true=y_val, y_pred=out_sample_preds))
-            results['train_' + metric].append(score_fn(y_true=y_tr, y_pred=in_sample_preds))
+            results['test_' + metric].append(score_fn(y_true=y_val, y_score=out_sample_preds[:, 1]))
+            results['train_' + metric].append(score_fn(y_true=y_tr, y_score=in_sample_preds[:, 1]))
 
         results['estimators'].append(lm)
 
