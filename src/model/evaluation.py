@@ -11,6 +11,7 @@ from collections import defaultdict
 all_proba_metrics = ['roc_auc']
 all_non_proba_metrics = ['accuracy', 'precision']
 
+
 def cross_validate(
   estimator,
   X,
@@ -61,10 +62,16 @@ def cross_validate(
             score_fn = getattr(metrics, metric + '_score')
             results['test_' + metric].append(score_fn(y_true=y_val, y_score=out_sample_preds[:, 1]))
             results['train_' + metric].append(score_fn(y_true=y_tr, y_score=in_sample_preds[:, 1]))
+          results['y_proba_preds'].append(out_sample_preds)
 
         results['estimators'].append(lm)
+        results['y_preds'].append(out_sample_preds)
+        results['y_true'].append(y_val)
+        results['X_test'].append(X_val)
+
 
     return results
+
 
 def make_confusion_matrix(X_test, y_test, model, labels, title, threshold=0.5):
     y_predict = (model.predict_proba(X_test)[:, 1] >= threshold)
@@ -76,6 +83,7 @@ def make_confusion_matrix(X_test, y_test, model, labels, title, threshold=0.5):
     plt.title(title)
     plt.xlabel('prediction')
     plt.ylabel('actual')
+
 
 def report_single_model_metrics(scores, metrics=['roc_auc', 'accuracy', 'precision']):
     rows = []
@@ -107,6 +115,7 @@ def report_grid_results(X, y, estimator, param_grid, scoring='roc_auc', return_t
       'rank_test_score'
     ]].sort_values('rank_test_score')
     return results, gr.best_params_
+
 
 def run_pipeline(
     raw_data,
@@ -141,3 +150,4 @@ def run_pipeline(
     print('Best params:', best_params)
     # return formatted results
     return report_single_model_metrics(scores_tuned)
+

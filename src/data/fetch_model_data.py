@@ -24,6 +24,7 @@ def fetch_raw(ip_address: str) -> pd.DataFrame:
     select
       b.bill_id,
       -- author fields
+      pa.people_id as author_id,
       ia.np_score as author_ideology,
       pa.party_id as author_party,
       array_agg(pca.role) @> '{Chair}' as author_is_chair,
@@ -51,7 +52,7 @@ def fetch_raw(ip_address: str) -> pd.DataFrame:
     left join ideology ids on ids.people_id = s.people_id
     left join people_committee pcs on pcs.people_id = s.people_id
     left join people_detail pds on pds.people_id = s.people_id
-    group by b.bill_id, b.third_reading, ia.np_score, pa.party_id, pda.years_senate, pda.total_funding, b.description
+    group by b.bill_id, b.third_reading, ia.np_score, pa.party_id, pa.people_id, pda.years_senate, pda.total_funding, b.description
   ), agg_sponsors as (
     select
       b.bill_id,
@@ -83,7 +84,8 @@ def fetch_raw(ip_address: str) -> pd.DataFrame:
       no_pos_slips
   from main m
   left join agg_sponsors a on m.bill_id = a.bill_id
-  left join slips s on s.bill_id = m.bill_id;
+  left join slips s on s.bill_id = m.bill_id
+  where m.author_id not in (1082, 1055, 1052);
   """
 
   return pd.read_sql(query_data, con=aws_engine)
