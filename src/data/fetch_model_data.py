@@ -84,12 +84,15 @@ def fetch_raw(ip_address: str) -> pd.DataFrame:
       no_pos_slips
   from main m
   left join agg_sponsors a on m.bill_id = a.bill_id
-  left join slips s on s.bill_id = m.bill_id
-  where m.author_id not in (1082, 1055, 1052);
+  left join slips s on s.bill_id = m.bill_id;
   """
-
   return pd.read_sql(query_data, con=aws_engine)
 
-def fetch_model_data(ip_address: str) -> pd.DataFrame:
+def fetch_model_data(ip_address: str, split=False) -> pd.DataFrame:
   raw = fetch_raw(ip_address)
-  return add_trivial_features(handle_nulls(raw))
+  with_features = add_trivial_features(handle_nulls(raw))
+  if split:
+    outlier_author_ids = [1082, 1055, 1052]
+    return with_features[with_features.author_id.isin(outlier_author_ids)], with_features[~with_features.author_id.isin(outlier_author_ids)]
+  return with_features
+
