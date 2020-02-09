@@ -21,6 +21,7 @@ def cross_validate(
   fit_params={},
   cv=5,
   standardize=False,
+  std_features=None,
   stratify_on_target=True,
   oversample=False,
   show_conf_matrices=False,
@@ -46,10 +47,13 @@ def cross_validate(
 
         if standardize:
             scaler = StandardScaler()
-            X_tr = scaler.fit_transform(X_tr)
-            X_val = scaler.transform(X_val)
+            X_tr = pd.DataFrame(X_tr, columns=X.columns)
+            X_val = pd.DataFrame(X_val, columns=X.columns)
+
+            X_tr.loc[:, std_features] = scaler.fit_transform(X_tr.loc[:, std_features])
+            X_val.loc[:, std_features] = scaler.fit_transform(X_val.loc[:, std_features])
         if oversample:
-            ros = RandomOverSampler(random_state=0)
+            ros = RandomOverSampler(random_state=42)
             X_tr, y_tr = ros.fit_sample(X_tr,y_tr)
 
         lm = estimator(**fit_params)
@@ -174,27 +178,27 @@ def run_pipeline(
     # return formatted results
     return report_single_model_metrics(scores_tuned)
 
-def comparison_pipeline(X, y, models, metrics):
+def comparison_pipeline(X, y, models, metrics, std_features=None, oversample=False):
   results = []
   other_info = []
   for name, param_grid, estimator in models:
-      # standardize if model requires it
-      std = StandardScaler()
-      X_tr = std.fit_transform(X) if name in ['knn', 'log', 'svm'] else X
-
+      # don't know how make grid search oversample/standardize within it's cv
+      # TODO: write own grid search that takes an oversample flag
       _, best_params = report_grid_results(
-          X_tr,
+          X,
           y,
           estimator(),
           param_grid=param_grid,
       )
       scores = cross_validate(
           estimator,
-          X_tr,
+          X,
           y,
           fit_params=best_params,
           scoring=metrics,
-          standardize=False
+          standardize=True if name in ['knn', 'log', 'svm'] else False,
+          std_features=std_features,
+          oversample=oversample
       )
       other_info.append({'model': name, 'scores': scores, 'best_params': best_params })
 
