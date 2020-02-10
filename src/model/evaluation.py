@@ -51,11 +51,13 @@ def cross_validate(
             X_val = pd.DataFrame(X_val, columns=X.columns)
 
             X_tr.loc[:, std_features] = scaler.fit_transform(X_tr.loc[:, std_features])
-            X_val.loc[:, std_features] = scaler.fit_transform(X_val.loc[:, std_features])
+            X_val.loc[:, std_features] = scaler.transform(X_val.loc[:, std_features])
         if oversample:
             ros = RandomOverSampler(random_state=42)
             X_tr, y_tr = ros.fit_sample(X_tr,y_tr)
 
+        X_tr = pd.DataFrame(X_tr, columns=X.columns)
+        X_val = pd.DataFrame(X_val, columns=X.columns)
         lm = estimator(**fit_params)
         fit = lm.fit(X_tr, y_tr)
         model_has_pred_proba = getattr(lm, 'predict_proba', None) and callable(lm.predict_proba)
@@ -81,7 +83,7 @@ def cross_validate(
             'Confusion Matrix'
           )
 
-        if model_has_pred_proba:
+        if model_has_pred_proba and proba_metrics:
           in_sample_preds = fit.predict_proba(X_tr)
           out_sample_preds = fit.predict_proba(X_val)
 
@@ -145,19 +147,14 @@ def report_grid_results(X, y, estimator, param_grid, scoring='roc_auc', return_t
 
 
 def run_pipeline(
-    raw_data,
-    features,
     estimator,
+    X_train,
+    y_train,
     param_grid,
-    standardize=False,
+    metrics=['roc_auc', 'accuracy', 'precision', 'recall'],
+    oversample=False,
+    standardize=False
 ):
-    # get matching train/test split with new feature set
-    X, y = raw_data[features], raw_data['third_reading']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=99, stratify=y)
-
-    if standardize:
-      scaler = StandardScaler()
-      X_train = scaler.fit_transform(X_train)
     # optimize parameters
     _, best_params = report_grid_results(
         X_train,
@@ -171,12 +168,13 @@ def run_pipeline(
         X_train,
         y_train,
         fit_params=best_params,
-        scoring=['roc_auc', 'accuracy', 'precision'],
-        standardize=False
+        scoring=metrics,
+        standardize=standardize,
+        oversample=oversample
     )
     print('Best params:', best_params)
     # return formatted results
-    return report_single_model_metrics(scores_tuned)
+    return report_single_model_metrics(scores_tuned, metrics=metrics)
 
 def comparison_pipeline(X, y, models, metrics, std_features=None, oversample=False):
   results = []
