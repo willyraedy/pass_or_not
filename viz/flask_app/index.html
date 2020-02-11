@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>IL Senate Bill Predictor</title>
+    <link rel="stylesheet" href="static/d3.slider.css" />
+    <style>
+
+     body {
+       font-family: Verdana,Arial,sans-serif;
+     }
+
+     .title {
+       font-size: 2em;
+       margin: 60px 0 5px 0;
+       color: gray;
+       text-align: center;
+     }
+
+     .space {
+       margin-bottom: 30 px;
+     }
+
+     .wrapper {
+       width: 1000px;
+       margin-left: auto;
+       margin-right: auto;
+       margin-bottom: 0px;
+     }
+
+     #bar_chart {
+       margin-bottom: 0 px;
+     }
+
+     .bar {
+       fill: #FF75A3;
+     }
+
+     span {
+       color: steelblue;
+     }
+
+     .container {
+       display: flex;
+       flex-direction: row;
+       justify-content: center;
+     }
+
+     .result_container {
+       margin-top: 30px;
+       display: flex;
+       flex-direction: row;
+       justify-content: center;
+       align-items: center;
+     }
+
+     .slide_container {
+       width: 600px;
+     }
+
+     .slide_row_container {
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+     }
+
+     .unclear_indicator {
+       color: gray;
+       margin: 0 30px 0 30px;
+     }
+
+    </style>
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <h1 class='title space'>Will a bill get a vote on the Senate floor?</h1>
+    </div>
+<!--
+    <div>
+      <div id='arc_exp'></div>
+    </div> -->
+
+    <div class="result_container">
+      <div id='no_indicator'></div>
+      <h2 class='feature unclear_indicator'>Unclear</h2>
+      <div id='yes_indicator'></div>
+    </div>
+
+    <div class='wrapper'>
+      <h2 class='feature'>Who is the author?: <span id='author'>Neil Anderson</span></h2>
+    </div>
+    <div class='container'>
+      <div id='sen_tiles'></div>
+    </div>
+
+    <div id="sliders" class="wrapper">
+      <div class='slide_row_container'>
+        <div class='slide_container'>
+          <h2 class="feature">Number of Witness Slips: <span id="total_slips">5</span></h2>
+          <div id="total_slips_slider"></div>
+        </div>
+        <div>
+          <h2 class="feature">Percent Supporting:</h2>
+          <input type="number" min="1" max="100" id="perc_pro" value='80' onchange="handlePercPro(this.value)"/>
+        </div>
+      </div>
+
+      <div class='slide_row_container'>
+        <div class='slide_container'>
+          <h2 class="feature">Number of Co-sponsors: <span id="total_sponsors">2</span></h2>
+          <div id="total_sponsors_slider"></div>
+        </div>
+        <div>
+          <h2 class="feature">Republican Sponsor?:</h2>
+          <input type="radio" id="yes_bip" name="bip" value="1", onchange="handleBipartisan(1)">Yes
+          <input checked type="radio" id="no_bip" name="bip" value="0", onchange="handleBipartisan(0)">No
+        </div>
+      </div>
+    </div>
+
+    <!-- Import the libraries: jQuery, d3, d3.slider -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="static/d3.slider.js"></script>
+
+    <script>
+
+     <!-- SET UP DATA -->
+
+     var current_age = 25;
+     var current_year = 2010;
+     var current_nodes = 1;
+     var current_risk = 97.0;
+
+     let pred  = 'u';
+     let total_slips = 5;
+     let perc_pro = 0.8;
+     let total_sponsors = 2;
+     let bipartisan = false;
+
+     const senators = [
+       // democrat
+       { name: 'Omar Aquino', district:	2, party:	'D', },
+       { name: 'Christopher Belt', district:	57, party:	'D', },
+       { name: 'Scott M. Bennett', district:	52, party:	'D', },
+       { name: 'Jennifer Bertino-Tarrant', district:	49, party:	'D', },
+       { name: 'Melinda Bush', district:	31, party:	'D', },
+       { name: 'Cristina Castro', district:	22, party:	'D', },
+       { name: 'Jacqueline Y. Collins', district:	16, party:	'D', },
+       { name: 'Rachelle Crowe', district:	56, party:	'D', },
+       { name: 'Thomas Cullerton', district:	23, party:	'D', },
+       // rep
+       { name: 'Jason A. Barickman', district:	53, party:	'R', },
+       { name: 'Neil Anderson', district:	36, party:	'R', img_url='http://www.ilga.gov/images/members/%7B90CDA259-1DEA-4D18-AE97-30051E03D154%7D.jpg' },
+       { name: 'William E. Brady', district:	44, party:	'R', },
+       { name: 'John F. Curran', district:	41, party:	'R', },
+       // dems
+      { name: 'Bill Cunningham', district:	18, party:	'D', },
+      { name: 'Laura Ellman', district:	21, party:	'D', },
+      { name: 'Sara Feigenholtz', district:	6, party:	'D', },
+      { name: 'Laura Fine', district:	9, party:	'D', },
+      { name: 'Ann Gillespie', district:	27, party:	'D', },
+      { name: 'Suzy Glowiak Hilton', district:	24, party:	'D', },
+      { name: 'Don Harmon', district:	39, party:	'D', },
+      { name: 'Napoleon Harris, III', district:	15, party:	'D', },
+      { name: 'Michael E. Hastings', district:	19, party:	'D', },
+      // reps
+      { name: 'Dale Fowler', district:	59, party:	'R', },
+      { name: 'Donald P. DeWitte', district:	33, party:	'R', },
+      { name: 'Steve McClure', district:	50, party:	'R', },
+      { name: 'Dan McConchie', district:	26, party:	'R', },
+      // dems
+      { name: 'Linda Holmes', district:	42, party:	'D', },
+      { name: 'Mattie Hunter', district:	3, party:	'D', },
+      { name: 'Emil Jones, III', district:	14, party:	'D', },
+      { name: 'Patrick J. Joyce', district:	40, party:	'D', },
+      { name: 'David Koehler', district:	46, party:	'D', },
+      { name: 'Steven M. Landek', district:	12, party:	'D', },
+      { name: 'Kimberly A. Lightford', district:	4, party:	'D', },
+      { name: 'Terry Link', district:	30, party:	'D', },
+      { name: 'Andy Manar', district:	48, party:	'D', },
+      // reps
+      { name: 'Jim Oberweis', district:	25, party:	'R', },
+      { name: 'Jason Plummer', district:	54, party:	'R', },
+      { name: 'Dale A. Righter', district:	55,  party:	'R', },
+      { name: 'Sue Rezin', district:	38, party:	'R', },
+      // dems
+      { name: 'Iris Y. Martinez', district:	20, party:	'D', },
+      { name: 'Robert F. Martwick', district:	10, party:	'D', },
+      { name: 'Pat McGuire', district:	43, party:	'D', },
+      { name: 'Julie A. Morrison', district:	29, party:	'D', },
+      { name: 'Antonio Muñoz', district:	1, party:	'D', },
+      { name: 'Laura M. Murphy', district:	28, party:	'D', },
+      { name: 'Robert Peters', district:	13, party:	'D', },
+      // reps
+      { name: 'Chapin Rose', district:	51, party:	'R', },
+      { name: 'Paul Schimpf', district:	58, party:	'R', },
+      { name: 'Brian W. Stewart', district:	45, party:	'R', },
+      { name: 'Dave Syverson', district:	35, party:	'R', },
+      // dems
+      { name: 'Steve Stadelman', district:	34, party:	'D', },
+      { name: 'Elgie R. Sims, Jr.', district:	17, party:	'D', },
+      { name: 'Heather A. Steans', district:	7, party:	'D', },
+      { name: 'Patricia Van Pelt', district:	5, party:	'D', },
+      { name: 'Celina Villanueva', district:	11, party:	'D', },
+      { name: 'Ram Villivalam', district:	8, party:	'D', },
+      // reps
+      { name: 'Jil Tracy', district:	47, party:	'R', },
+      { name: 'Chuck Weaver', district:	37, party:	'R', },
+      { name: 'Craig Wilcox', district: 32, party: 'R' },
+     ]
+     let author = senators[0];
+
+    // Arc experiment
+    // var arc_width = 1400,
+    //   arc_height = arc_width,
+    //   arc_radius = Math.min(arc_width, arc_height) / 2;
+
+    // const svg_root = d3.select('#arc_exp').append('svg:svg').attr('width', arc_width).attr('height', arc_height / 2)
+
+    // const group_of_arcs = svg_root.append('g').attr('class', 'slice')
+    // const group_of_tiles = svg_root.append('g').attr('class', 'tile')
+
+    // const arc1 = d3.svg.arc().outerRadius(arc_radius / 5 * 2).innerRadius(arc_radius / 5).startAngle(-Math.PI / 2).endAngle(Math.PI / 2)
+    // const arc2 = d3.svg.arc().outerRadius(arc_radius / 5 * 3).innerRadius(arc_radius / 5 * 2).startAngle(-Math.PI / 2).endAngle(Math.PI / 2)
+    // const arc3 = d3.svg.arc().outerRadius(arc_radius / 5 * 4).innerRadius(arc_radius / 5 * 3).startAngle(-Math.PI / 2).endAngle(Math.PI / 2)
+    // const arc4 = d3.svg.arc().outerRadius(arc_radius / 5 * 5).innerRadius(arc_radius / 5 * 4).startAngle(-Math.PI / 2).endAngle(Math.PI / 2)
+
+    // const pie_slices = d3.layout.pie()
+    //   .startAngle(-Math.PI / 2).endAngle(Math.PI / 2)
+    //   .value(d => d)
+
+    // const slices_for_ring = (ring_num) => {
+    //   if (ring_num === 1) {
+    //     return 7
+    //   } else if (ring_num === 2) {
+    //     return 11
+    //   } else if (ring_num === 3) {
+    //     return 17
+    //   }
+    //   return 23
+    // }
+
+    // const num_rings = 4
+    // for (i = 1; i <= num_rings; i++) {
+    //   const dummy_data = Array(slices_for_ring(i)).fill(1)
+    //   console.log(dummy_data)
+    //   group_of_arcs.selectAll('path' + i)
+    //     .data(pie_slices(dummy_data))
+    //     .enter()
+    //     .append('path')
+    //     .attr('d', d3.svg.arc()
+    //       .outerRadius(arc_radius / (num_rings + 1) * (i + 1))
+    //       .innerRadius(arc_radius / (num_rings + 1) * i)
+    //     )
+    //     .style('fill', (d, i) => i % 2 ? 'blue' : 'red')
+    // }
+
+    // group_of_arcs.attr("transform", "translate(" + arc_width / 2 + "," + (arc_height / 2) + ")")
+
+
+    // YES NO INDICATOR BUTTONS
+    const yesIndicatorSVG = d3.select("#yes_indicator")
+                   .append("svg:svg")
+                   .attr("width", 120)
+                   .attr("height", 120);
+
+    const yesIndicator = yesIndicatorSVG.append('g')
+    yesIndicator.append("circle")
+        .attr("cx", 60)
+        .attr("cy", 60)
+        .attr("r", 50)
+        .attr("stroke", "black")
+        .style('fill', 'green')
+    yesIndicator.append("text")
+      .attr('id', 'nay_text')
+      .attr('x', 50)
+      .attr('y', 50)
+      .attr("font-size", 20)
+      .attr('fill', 'white')
+      .text('Aye')
+
+    const noIndicatorSVG = d3.select("#no_indicator")
+                  .append("svg:svg")
+                  .attr("width", 120)
+                  .attr("height", 120);
+
+    const noIndicator = noIndicatorSVG.append('g')
+    noIndicator.append("circle")
+        .attr("cx", 60)
+        .attr("cy", 60)
+        .attr("r", 50)
+        .attr("stroke", "black")
+        .style('fill', 'red')
+    noIndicator.append("text")
+      .attr('id', 'nay_text')
+      .attr('x', 50)
+      .attr('y', 50)
+      .attr("font-size", 20)
+      .attr('fill', 'white')
+      .text('Nay')
+
+    // Congress people tiles
+    // 13 + 15 + 13 + 11 + 9
+
+    let sen_height = 600
+    let sen_width = 1300
+    const num_rows = 5
+    const num_cols = 13
+
+    const determine_row = (idx) => {
+      if (idx < 13) {
+        return 0
+      } else if (idx < 26) {
+        return 1
+      } else if (idx < 39) {
+        return 2
+      } else if (idx < 50) {
+        return 3
+      } else {
+        return 4
+      }
+    }
+
+    const indent_by_row = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 2 }
+    const sen_by_row = { 0: 0, 1: 13, 2: 26, 3: 39, 4: 50 }
+    const tile_width = sen_width / num_cols
+    const tile_height = sen_height / num_rows
+
+    const senTilesSVG = d3.select('#sen_tiles').append('svg')
+      .attr('width', sen_width)
+      .attr('height', sen_height)
+    const tiles = senTilesSVG.selectAll('rect')
+      .data(senators)
+      .enter()
+      .append('rect')
+      .attr('x', (d, i) => (i + indent_by_row[determine_row(i)] - sen_by_row[determine_row(i)]) * tile_width)
+      .attr('y', (d, i) => tile_height * determine_row(i))
+      .attr('fill', (d) => d.party === 'D' ? 'blue' : 'red')
+      .attr('height', tile_height - 2)
+      .attr('width', tile_width - 2)
+      .on('click', (d) => {
+        author = d
+        d3.select('#author').text(d.name)
+        getAndDrawChance()
+      })
+
+      <!-- SLIDERS -->
+
+    d3.select('#total_slips_slider')
+      .call(
+        d3.slider()
+          .value(total_slips)
+          .step(1)
+          .axis(true)
+          // .attr('width', 600)
+          .on("slide", function(evt,value) {
+            d3.select('#total_slips').text(value);
+            total_slips = value;
+            getAndDrawChance()
+          })
+      );
+
+    d3.select('#total_sponsors_slider')
+    .call(
+      d3.slider()
+        .value(total_sponsors)
+        .step(1)
+        .axis(true)
+        .on("slide", function(evt,value) {
+          d3.select('#total_sponsors').text(value);
+          total_sponsors = value;
+          getAndDrawChance()
+        }
+        )
+    );
+
+
+     <!-- FUNCTION TO GET CHANCE FROM YOUR PREDICTOR WITH AJAX AND CHANGE BAR  HEIGHT -->
+
+     function handlePercPro(val){
+       perc_pro = val
+       getAndDrawChance()
+     }
+
+     function handleBipartisan(val){
+       bipartisan = val
+       getAndDrawChance()
+     }
+
+     function getAndDrawChance(){
+      console.log(author, perc_pro, bipartisan, total_slips, total_sponsors)
+      //  year = year - 1900;
+      //  $.ajax({
+      //    type: "POST",
+      //    contentType: "application/json; charset=utf-8",
+      //    url: "/score",
+      //    dataType: "json",
+      //    async: true,
+      //    data: "{\"example\": ["+age+","+year+","+nodes+"]}",
+      //    success: function (data) {
+      //      var chance = 100 * data["score"];
+      //      d3.select("#chancebar")
+      //        .attr("width", chance_scale(chance));
+      //      d3.select("#percent_text")
+      //        .attr("x", chance_scale(chance-5))
+      //        .text(chance.toFixed(1) + "%");
+      //    },
+      //    error: function (result) {
+      //    }
+      //  })
+     }
+
+    </script>
+  </body>
+</html>
