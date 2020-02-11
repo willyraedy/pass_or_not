@@ -1,19 +1,12 @@
 import flask
-from sklearn.linear_model import LogisticRegression
+import pickle
 import numpy as np
 import pandas as pd
 
 #---------- MODEL IN MEMORY ----------------#
 
-# Read the scientific data on breast cancer survival,
-# Build a LogisticRegression predictor on it
-patients = pd.read_csv("haberman.data", header=None)
-patients.columns=['age','year','nodes','survived']
-patients=patients.replace(2,0)  # The value 2 means death in 5 years
-
-X = patients[['age','year','nodes']]
-Y = patients['survived']
-PREDICTOR = LogisticRegression().fit(X,Y)
+with open('./finalModel.pickle', 'rb') as read_file:
+    PREDICTOR = pickle.load(read_file)
 
 
 #---------- URLS AND WEB PAGES -------------#
@@ -40,10 +33,10 @@ def score():
     """
     # Get decision score for our example that came with the request
     data = flask.request.json
-    x = np.matrix(data["example"])
-    score = PREDICTOR.predict_proba(x)
+    inputs = pd.DataFrame([dict(data)])
+    score = PREDICTOR.predict_proba(inputs)
     # Put the result in a nice dict so we can send it as json
-    results = {"score": score[0,1]}
+    results = {"result": 1 if score[:, 1][0] > 0.75 else 0, 'score': score[:, 1][0] }
     return flask.jsonify(results)
 
 #--------- RUN WEB APP SERVER ------------#

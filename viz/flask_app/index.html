@@ -65,12 +65,17 @@
   <body>
     <div class="container">
       <h1 class='title space'>Will a bill get a vote on the IL Senate floor?</h1>
+      <div class='row center-children mt-5'>
+        <h3>Fill in the information below at the time of the bill's second reading.</h3>
+      </div>
     </div>
 
-    <div class="container mt-5">
+    <div class="container my-5">
       <div class='row center-children'>
         <div id='no_indicator'></div>
         <div id='yes_indicator'></div>
+        <div id='ph_indicator'></div>
+        <h3 id='result-description' class='ml-3 col-5'>Awaiting your inputs...</h3>
       </div>
     </div>
 
@@ -89,18 +94,14 @@
       <div class='row mt-5'>
         <div class='col-5 center-children'>
           <div class="custom-control custom-switch center-children">
-            <input type="checkbox" class="custom-control-input" id="customSwitch1">
+            <input type="checkbox" class="custom-control-input" id="customSwitch1" onchange="handleBipartisan()">
             <label class="custom-control-label feature-label pointer" for="customSwitch1">Has a Republican Co-Sponsor?</label>
           </div>
         </div>
         <div class='col-2'></div>
         <div class='col-5'>
-          <div class='row center-children'>
-            <h2 class="feature-label">Percent Supporting:</h2>
-            <div class='col-2'>
-              <input class="form-control form-control-sm" type="number" min="1" max="100" id="perc_pro" value='80' onchange="handlePercPro(this.value)"/>
-            </div>
-          </div>
+          <h2 class="feature-label mb-2">Percent Supporting: <span id="perc_pro">80</span></h2>
+          <div id="perc_pro_slider"></div>
         </div>
       </div>
     </div>
@@ -118,142 +119,164 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="static/d3.slider.js"></script>
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script> -->
 
     <script>
     // Set up data
-     var current_age = 25;
-     var current_year = 2010;
-     var current_nodes = 1;
-     var current_risk = 97.0;
-
-     let pred  = 'u';
+     let prediction = null;
      let total_slips = 5;
-     let perc_pro = 0.8;
+     let perc_pro = 80;
      let total_sponsors = 2;
      let bipartisan = false;
 
      const senators = [
        // democrat
-       { name: 'Omar Aquino', district:	2, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B79A5CDE2-DD9F-423E-83F0-4643FDB13ABB%7D.jpg' },
-       { name: 'Christopher Belt', district:	57, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BEFE7513C-260C-46DE-BAB3-A12F250B2937%7D.jpg' },
-       { name: 'Scott M. Bennett', district:	52, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B8F1A0093-CB44-43C1-9D4D-67266A50A8C6%7D.jpg' },
-       { name: 'Jennifer Bertino-Tarrant', district:	49, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B01A3B178-08B3-42A9-9022-FEE4C3220565%7D.jpg' },
-       { name: 'Melinda Bush', district:	31, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B772B9650-EA19-4BC6-9C53-F76EB5DA14B3%7D.jpg' },
-       { name: 'Cristina Castro', district:	22, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BF09EB558-EB8D-48B1-91F0-EF47A07632F5%7D.jpg' },
-       { name: 'Jacqueline Y. Collins', district:	16, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BD2A0AAA1-D1A0-49D3-8A11-78A1A73D73A9%7D.jpg' },
-       { name: 'Rachelle Crowe', district:	56, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B05406617-A6A5-4533-852E-04678B860D88%7D.jpg' },
-       { name: 'Thomas Cullerton', district:	23, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BA0AAC8CC-CA27-4DD9-9F4F-E1EA4C12B0E3%7D.jpg' },
+       { name: 'Omar Aquino', district:	2, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B79A5CDE2-DD9F-423E-83F0-4643FDB13ABB%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 1, },
+       { name: 'Christopher Belt', district:	57, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BEFE7513C-260C-46DE-BAB3-A12F250B2937%7D.jpg', author_is_chair: 0, author_funding_level: 1, author_term: 1, },
+       { name: 'Scott M. Bennett', district:	52, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B8F1A0093-CB44-43C1-9D4D-67266A50A8C6%7D.jpg', author_is_chair: 0, author_funding_level: 2, author_term: 2, },
+       { name: 'Jennifer Bertino-Tarrant', district:	49, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B01A3B178-08B3-42A9-9022-FEE4C3220565%7D.jpg', author_is_chair: 1, author_funding_level: 3, author_term: 2, },
+       { name: 'Melinda Bush', district:	31, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B772B9650-EA19-4BC6-9C53-F76EB5DA14B3%7D.jpg', author_is_chair: 1, author_funding_level: 3, author_term: 2, },
+       { name: 'Cristina Castro', district:	22, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BF09EB558-EB8D-48B1-91F0-EF47A07632F5%7D.jpg', author_is_chair: 0, author_funding_level: 1, author_term: 1, },
+       { name: 'Jacqueline Y. Collins', district:	16, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BD2A0AAA1-D1A0-49D3-8A11-78A1A73D73A9%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 3, },
+       { name: 'Rachelle Crowe', district:	56, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B05406617-A6A5-4533-852E-04678B860D88%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 1, },
+       { name: 'Thomas Cullerton', district:	23, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BA0AAC8CC-CA27-4DD9-9F4F-E1EA4C12B0E3%7D.jpg', author_is_chair: 1, author_funding_level: 3, author_term: 2, },
        // rep
-       { name: 'Neil Anderson', district:	36, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B90CDA259-1DEA-4D18-AE97-30051E03D154%7D.jpg' },
-       { name: 'Jason A. Barickman', district:	53, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B73221756-E2C7-4B72-8907-701CC96B7ED2%7D.jpg' },
-       { name: 'William E. Brady', district:	44, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BD9BF6EBA-FC02-48DC-8505-B83436A46DD5%7D.jpg' },
-       { name: 'John F. Curran', district:	41, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B7FC724D0-C297-4D20-AC25-3D879DE286B8%7D.jpg' },
+       { name: 'Neil Anderson', district:	36, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B90CDA259-1DEA-4D18-AE97-30051E03D154%7D.jpg',  },
+       { name: 'Jason A. Barickman', district:	53, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B73221756-E2C7-4B72-8907-701CC96B7ED2%7D.jpg',  },
+       { name: 'William E. Brady', district:	44, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BD9BF6EBA-FC02-48DC-8505-B83436A46DD5%7D.jpg', },
+       { name: 'John F. Curran', district:	41, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B7FC724D0-C297-4D20-AC25-3D879DE286B8%7D.jpg', },
        // dems
-      { name: 'Bill Cunningham', district:	18, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B402F0454-4EAF-4721-993D-53C7459BA35B%7D.jpg' },
-      { name: 'Laura Ellman', district:	21, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B423E6DDE-1AFB-4F10-A767-C869B0E51483%7D.jpg' },
-      { name: 'Sara Feigenholtz', district:	6, party:	'D', img_url: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2F0%2F07%2FBong_Joon-ho_Deauville_2013.jpg&f=1&nofb=1' },
-      { name: 'Laura Fine', district:	9, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BA4F70929-881C-4003-B10A-D1A775D3D94B%7D.jpg' },
-      { name: 'Ann Gillespie', district:	27, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BD11CC547-0960-44F1-80C9-99F8CE5D5479%7D.jpg' },
-      { name: 'Suzy Glowiak Hilton', district:	24, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B8DE2D7E5-9F3D-43FD-B0EC-0010BDA8849A%7D.jpg' },
-      { name: 'Don Harmon', district:	39, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BCF3F6473-4E6D-4E84-A0A4-4FF7335132E2%7D.jpg' },
-      { name: 'Napoleon Harris, III', district:	15, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B87402198-6E85-4CFE-BDD2-B9DC58948869%7D.jpg' },
-      { name: 'Michael E. Hastings', district:	19, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BC6E534EB-7243-4687-8A65-04BD4DA5DF72%7D.jpg' },
+      { name: 'Bill Cunningham', district:	18, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B402F0454-4EAF-4721-993D-53C7459BA35B%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 2, },
+      { name: 'Laura Ellman', district:	21, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B423E6DDE-1AFB-4F10-A767-C869B0E51483%7D.jpg', author_is_chair: 0, author_funding_level: 1, author_term: 1, },
+      { name: 'Sara Feigenholtz', district:	6, party:	'D', img_url: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2F0%2F07%2FBong_Joon-ho_Deauville_2013.jpg&f=1&nofb=1', author_is_chair: 0, author_funding_level: 2, author_term: 1, },
+      { name: 'Laura Fine', district:	9, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BA4F70929-881C-4003-B10A-D1A775D3D94B%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 1, },
+      { name: 'Ann Gillespie', district:	27, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BD11CC547-0960-44F1-80C9-99F8CE5D5479%7D.jpg', author_is_chair: 0, author_funding_level: 1, author_term: 1, },
+      { name: 'Suzy Glowiak Hilton', district:	24, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B8DE2D7E5-9F3D-43FD-B0EC-0010BDA8849A%7D.jpg', author_is_chair: 0, author_funding_level: 1, author_term: 1, },
+      { name: 'Don Harmon', district:	39, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BCF3F6473-4E6D-4E84-A0A4-4FF7335132E2%7D.jpg', author_is_chair: 1, author_funding_level: 3, author_term: 3, },
+      { name: 'Napoleon Harris, III', district:	15, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B87402198-6E85-4CFE-BDD2-B9DC58948869%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 2, },
+      { name: 'Michael E. Hastings', district:	19, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BC6E534EB-7243-4687-8A65-04BD4DA5DF72%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 2, },
       // reps
-      { name: 'Donald P. DeWitte', district:	33, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B21A3B029-3423-410E-818A-84512CD0D231%7D.jpg' },
-      { name: 'Dale Fowler', district:	59, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B1E60CA94-7006-4CAB-841D-C9D99569D9D3%7D.jpg' },
-      { name: 'Steve McClure', district:	50, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BEB86B3C4-3F25-4D5C-8944-7B4CBCA7CACE%7D.jpg' },
-      { name: 'Dan McConchie', district:	26, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BB3DB61E4-CBA1-4E2C-9DC7-4EEE9F52BCD7%7D.jpg' },
+      { name: 'Donald P. DeWitte', district:	33, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B21A3B029-3423-410E-818A-84512CD0D231%7D.jpg', },
+      { name: 'Dale Fowler', district:	59, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B1E60CA94-7006-4CAB-841D-C9D99569D9D3%7D.jpg', },
+      { name: 'Steve McClure', district:	50, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BEB86B3C4-3F25-4D5C-8944-7B4CBCA7CACE%7D.jpg', },
+      { name: 'Dan McConchie', district:	26, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BB3DB61E4-CBA1-4E2C-9DC7-4EEE9F52BCD7%7D.jpg', },
       // dems
-      { name: 'Linda Holmes', district:	42, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B9A39C8B9-4B06-4BF7-85CE-4C6F4FD07769%7D.jpg' },
-      { name: 'Mattie Hunter', district:	3, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BF4630DDB-11F0-417E-8C0A-B4ED6426116F%7D.jpg' },
-      { name: 'Emil Jones, III', district:	14, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B2C0EE719-E9D8-4625-990D-69FCE146BC0F%7D.jpg' },
-      { name: 'Patrick J. Joyce', district:	40, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B39D6F100-DAEC-4C4B-A4F5-F20299B79152%7D.jpg' },
-      { name: 'David Koehler', district:	46, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B2C57E551-D82A-4C7D-8746-3F83913F0D7D%7D.jpg' },
-      { name: 'Steven M. Landek', district:	12, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BCB30B8CB-1FBB-4869-A78E-D08AF0616D74%7D.jpg' },
-      { name: 'Kimberly A. Lightford', district:	4, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B7FBA8DB0-281E-406F-BF9F-ABEB75B7B38E%7D.jpg' },
-      { name: 'Terry Link', district:	30, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B2F06AA07-1281-4363-A31D-3C7AFD0D3963%7D.jpg' },
-      { name: 'Andy Manar', district:	48, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B385C74DA-9ACC-41E3-99D3-08A6A1EC1FC9%7D.jpg' },
+      { name: 'Linda Holmes', district:	42, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B9A39C8B9-4B06-4BF7-85CE-4C6F4FD07769%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 3, },
+      { name: 'Mattie Hunter', district:	3, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BF4630DDB-11F0-417E-8C0A-B4ED6426116F%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 3, },
+      { name: 'Emil Jones, III', district:	14, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B2C0EE719-E9D8-4625-990D-69FCE146BC0F%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 3, },
+      { name: 'Patrick J. Joyce', district:	40, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B39D6F100-DAEC-4C4B-A4F5-F20299B79152%7D.jpg', author_is_chair: 0, author_funding_level: 1, author_term: 1, },
+      { name: 'David Koehler', district:	46, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B2C57E551-D82A-4C7D-8746-3F83913F0D7D%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 3, },
+      { name: 'Steven M. Landek', district:	12, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BCB30B8CB-1FBB-4869-A78E-D08AF0616D74%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 2, },
+      { name: 'Kimberly A. Lightford', district:	4, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B7FBA8DB0-281E-406F-BF9F-ABEB75B7B38E%7D.jpg', author_is_chair: 0, author_funding_level: 2, author_term: 3, },
+      { name: 'Terry Link', district:	30, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B2F06AA07-1281-4363-A31D-3C7AFD0D3963%7D.jpg', author_is_chair: 0, author_funding_level: 2, author_term: 3, },
+      { name: 'Andy Manar', district:	48, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B385C74DA-9ACC-41E3-99D3-08A6A1EC1FC9%7D.jpg', author_is_chair: 1, author_funding_level: 3, author_term: 2, },
       // reps
-      { name: 'Jim Oberweis', district:	25, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B732CAC2D-CEC4-467B-A9AA-05282259B15F%7D.jpg' },
-      { name: 'Jason Plummer', district:	54, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BCE75DC7E-2CD4-4D01-B697-C2866F828E25%7D.jpg' },
-      { name: 'Sue Rezin', district:	38, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B45666230-B77D-4162-A45E-6AC5587C4E56%7D.jpg' },
-      { name: 'Dale A. Righter', district:	55,  party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B25A344E9-478E-40E1-8D41-CA34A8FCCD61%7D.jpg' },
+      { name: 'Jim Oberweis', district:	25, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B732CAC2D-CEC4-467B-A9AA-05282259B15F%7D.jpg', },
+      { name: 'Jason Plummer', district:	54, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BCE75DC7E-2CD4-4D01-B697-C2866F828E25%7D.jpg', },
+      { name: 'Sue Rezin', district:	38, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B45666230-B77D-4162-A45E-6AC5587C4E56%7D.jpg', },
+      { name: 'Dale A. Righter', district:	55,  party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B25A344E9-478E-40E1-8D41-CA34A8FCCD61%7D.jpg', },
       // dems
-      { name: 'Iris Y. Martinez', district:	20, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B274BFBAB-00D7-4DB2-A9CD-FFABCDA5AD08%7D.jpg' },
-      { name: 'Robert F. Martwick', district:	10, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B8FA2A22C-6775-4098-905C-0C7D8BBD7AEE%7D.jpg' },
-      { name: 'Pat McGuire', district:	43, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B7994F2D1-3BE5-4722-915A-13C69FB3766C%7D.jpg' },
-      { name: 'Julie A. Morrison', district:	29, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B0E6BF8A6-C5C8-4F54-977B-D5FD11707FA5%7D.jpg' },
-      { name: 'Antonio Muñoz', district:	1, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BC4AA7682-5256-4C1D-A7C6-90953534A514%7D.jpg' },
-      { name: 'Laura M. Murphy', district:	28, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BE8C6FBF1-611C-4DD5-A81D-F0FF8917556D%7D.jpg' },
-      { name: 'Robert Peters', district:	13, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B05AD9CBA-EA20-489D-9C33-3F39DC1F9B0C%7D.jpg' },
+      { name: 'Iris Y. Martinez', district:	20, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B274BFBAB-00D7-4DB2-A9CD-FFABCDA5AD08%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 3, },
+      { name: 'Robert F. Martwick', district:	10, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B8FA2A22C-6775-4098-905C-0C7D8BBD7AEE%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 1, },
+      { name: 'Pat McGuire', district:	43, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B7994F2D1-3BE5-4722-915A-13C69FB3766C%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 2, },
+      { name: 'Julie A. Morrison', district:	29, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B0E6BF8A6-C5C8-4F54-977B-D5FD11707FA5%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 2, },
+      { name: 'Antonio Muñoz', district:	1, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BC4AA7682-5256-4C1D-A7C6-90953534A514%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 3, },
+      { name: 'Laura M. Murphy', district:	28, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BE8C6FBF1-611C-4DD5-A81D-F0FF8917556D%7D.jpg', author_is_chair: 0, author_funding_level: 3, author_term: 1, },
+      { name: 'Robert Peters', district:	13, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B05AD9CBA-EA20-489D-9C33-3F39DC1F9B0C%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 1, },
       // reps
-      { name: 'Chapin Rose', district:	51, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BBA95E1D1-0570-4492-B739-D1F593F183FD%7D.jpg' },
-      { name: 'Paul Schimpf', district:	58, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B9118303D-1BC2-4023-B54F-52B34927106C%7D.jpg' },
-      { name: 'Brian W. Stewart', district:	45, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B9542D32E-E8F8-4E42-963E-23FC7621D747%7D.jpg' },
-      { name: 'Dave Syverson', district:	35, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B6FD168B8-C34B-4399-8E39-7373F7600882%7D.jpg' },
+      { name: 'Chapin Rose', district:	51, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7BBA95E1D1-0570-4492-B739-D1F593F183FD%7D.jpg', },
+      { name: 'Paul Schimpf', district:	58, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B9118303D-1BC2-4023-B54F-52B34927106C%7D.jpg', },
+      { name: 'Brian W. Stewart', district:	45, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B9542D32E-E8F8-4E42-963E-23FC7621D747%7D.jpg', },
+      { name: 'Dave Syverson', district:	35, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B6FD168B8-C34B-4399-8E39-7373F7600882%7D.jpg', },
       // dems
-      { name: 'Elgie R. Sims, Jr.', district:	17, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B1EAF7721-A189-4CD1-B31D-CD39F79DBD04%7D.jpg' },
-      { name: 'Steve Stadelman', district:	34, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B47906765-AB0A-48BF-8C14-B5443B8F27C4%7D.jpg' },
-      { name: 'Heather A. Steans', district:	7, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B222FB39E-971E-4E7B-B43C-0B12080C2DD9%7D.jpg' },
-      { name: 'Patricia Van Pelt', district:	5, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B71DA8897-D74A-4034-9A99-79C7FB2BD90E%7D.jpg' },
-      { name: 'Celina Villanueva', district:	11, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BF8A21A81-5453-4E94-AC51-E644E1B0C00B%7D.jpg' },
-      { name: 'Ram Villivalam', district:	8, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BDBF0BBF0-0E16-4C5F-894A-16C4A14CAF51%7D.jpg' },
+      { name: 'Elgie R. Sims, Jr.', district:	17, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B1EAF7721-A189-4CD1-B31D-CD39F79DBD04%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 1, },
+      { name: 'Steve Stadelman', district:	34, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B47906765-AB0A-48BF-8C14-B5443B8F27C4%7D.jpg', author_is_chair: 1, author_funding_level: 1, author_term: 2, },
+      { name: 'Heather A. Steans', district:	7, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B222FB39E-971E-4E7B-B43C-0B12080C2DD9%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 3, },
+      { name: 'Patricia Van Pelt', district:	5, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7B71DA8897-D74A-4034-9A99-79C7FB2BD90E%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 2, },
+      { name: 'Celina Villanueva', district:	11, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BF8A21A81-5453-4E94-AC51-E644E1B0C00B%7D.jpg', author_is_chair: 0, author_funding_level: 2, author_term: 1, },
+      { name: 'Ram Villivalam', district:	8, party:	'D', img_url: 'http://www.ilga.gov/images/members/%7BDBF0BBF0-0E16-4C5F-894A-16C4A14CAF51%7D.jpg', author_is_chair: 1, author_funding_level: 2, author_term: 1, },
       // reps
-      { name: 'Jil Tracy', district:	47, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B21C0F860-E9DD-4215-A3AA-703E275C8526%7D.jpg' },
-      { name: 'Chuck Weaver', district:	37, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B984DFCEF-3D95-4524-9102-FAF8B6511BE4%7D.jpg' },
-      { name: 'Craig Wilcox', district: 32, party: 'R', img_url: 'http://www.ilga.gov/images/members/%7BE397F861-68AA-4CC2-9A23-50B9A8E13031%7D.jpg' },
+      { name: 'Jil Tracy', district:	47, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B21C0F860-E9DD-4215-A3AA-703E275C8526%7D.jpg', },
+      { name: 'Chuck Weaver', district:	37, party:	'R', img_url: 'http://www.ilga.gov/images/members/%7B984DFCEF-3D95-4524-9102-FAF8B6511BE4%7D.jpg', },
+      { name: 'Craig Wilcox', district: 32, party: 'R', img_url: 'http://www.ilga.gov/images/members/%7BE397F861-68AA-4CC2-9A23-50B9A8E13031%7D.jpg', },
      ]
      let author = null;
 
     // YES NO INDICATOR BUTTONS
     const indicator_radius = 70
-    const pin = d3.select('#yes_indicator')
+    const yes_ind = d3.select('#yes_indicator')
       .append('svg:svg')
+      .attr('id', 'yes_indicator_svg')
       .attr('width', indicator_radius * 2)
       .attr('height', indicator_radius * 2)
-    const pin_group = pin.append('g')
-    pin_group.append("svg:image")
+      .attr('display', 'none')
+    const no_ind = d3.select('#no_indicator')
+      .append('svg:svg')
+      .attr('id', 'no_indicator_svg')
+      .attr('width', indicator_radius * 2)
+      .attr('height', indicator_radius * 2)
+      .attr('display', 'none')
+    const placeholder_ind = d3.select('#ph_indicator')
+      .append('svg:svg')
+      .attr('id', 'ph_indicator_svg')
+      .attr('width', indicator_radius * 2)
+      .attr('height', indicator_radius * 2)
+
+    const yes_group = yes_ind.append('g')
+    yes_group.append("svg:image")
       .attr('class', 'pointer')
       .attr('x', 0)
       // .attr('y', 5)
       .attr('width', indicator_radius * 2)
       .attr('height', indicator_radius * 2)
       .attr("xlink:href", 'https://img1.etsystatic.com/133/0/11365624/il_fullxfull.915165345_71x4.jpg')
-    pin_group.append('rect')
+    yes_group.append('rect')
       .attr('x', indicator_radius * .27)
       .attr('y', indicator_radius * .7)
       .attr('width', indicator_radius * 1.4)
       .attr('height', indicator_radius *.6)
       .attr('fill', 'white')
-    pin_group.append('text')
+    yes_group.append('text')
       .attr('x', 23)
       .attr('y', 85)
       .attr('font-size', 40)
       .attr('font-family', 'Raleway')
       .text('YES!')
 
-    const pin_no = d3.select('#no_indicator')
-      .append('svg:svg')
-      .attr('width', indicator_radius * 2)
-      .attr('height', indicator_radius * 2)
-    const pin_group_no = pin_no.append('g')
-    pin_group_no.append("svg:image")
+    const ph_group = placeholder_ind.append('g')
+    ph_group.append("svg:image")
       .attr('class', 'pointer')
       .attr('x', -25)
       .attr('y', -25)
       .attr('width', indicator_radius * 2 + 50)
       .attr('height', indicator_radius * 2 + 50)
       .attr("xlink:href", 'https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fwww.publicdomainpictures.net%2Fpictures%2F90000%2Fnahled%2Fgrey-button-for-web.jpg&f=1&nofb=1')
-      pin_group_no.append('text')
+      ph_group.append('text')
       .attr('x', 28)
       .attr('y', 90)
       .attr('font-size', 60)
       .attr('font-family', 'Raleway')
       .style('fill', 'lightgray')
       .text('???')
+
+    const no_group = no_ind.append('g')
+    no_group.append("svg:image")
+      .attr('class', 'pointer')
+      .attr('x', -25)
+      .attr('y', -25)
+      .attr('width', indicator_radius * 2 + 50)
+      .attr('height', indicator_radius * 2 + 50)
+      .attr("xlink:href", 'https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fwww.simoney.co.uk%2Fmedia%2Fcatalog%2Fproduct%2Fcache%2F1%2Fimage%2F390x320%2F9df78eab33525d08d6e5fb8d27136e95%2Fw%2Fh%2Fwhite-button-badges.jpg&f=1&nofb=1')
+    no_group.append('rect')
+      .attr('x', indicator_radius * .38)
+      .attr('y', indicator_radius * .75)
+      .attr('width', indicator_radius * 1.2)
+      .attr('height', indicator_radius *.5)
+      .attr('fill', '#F0BAB9')
+
+    // indicator_svg.append(no_group)
 
     let sen_height = 700
     let sen_width = 1200
@@ -322,6 +345,10 @@
       .attr('height', tile_height - 24)
       .attr("xlink:href", (d) => d.img_url)
       .on('click', function(d) {
+        if (d.party === 'R') {
+          alert('Model only works for Democratic authors')
+          return;
+        }
         author = d
         d3.select('#author').text(d.name)
         d3.selectAll('.sen_tile').attr('class', 'faded sen_tile')
@@ -364,8 +391,21 @@
           d3.select('#total_sponsors').text(value);
           total_sponsors = value;
           getAndDrawChance()
-        }
-        )
+        })
+    );
+
+    d3.select('#perc_pro_slider')
+    .call(
+      d3.slider()
+        .value(perc_pro)
+        .step(1)
+        .axis(true)
+        .max(100)
+        .on("slide", function(evt,value) {
+          d3.select('#perc_pro').text(value);
+          perc_pro = value;
+          getAndDrawChance()
+        })
     );
 
     // Functions
@@ -376,31 +416,53 @@
      }
 
      function handleBipartisan(val){
-       bipartisan = val
+       bipartisan = !bipartisan
        getAndDrawChance()
      }
 
      function getAndDrawChance(){
-      console.log(author, perc_pro, bipartisan, total_slips, total_sponsors)
-      //  year = year - 1900;
-      //  $.ajax({
-      //    type: "POST",
-      //    contentType: "application/json; charset=utf-8",
-      //    url: "/score",
-      //    dataType: "json",
-      //    async: true,
-      //    data: "{\"example\": ["+age+","+year+","+nodes+"]}",
-      //    success: function (data) {
-      //      var chance = 100 * data["score"];
-      //      d3.select("#chancebar")
-      //        .attr("width", chance_scale(chance));
-      //      d3.select("#percent_text")
-      //        .attr("x", chance_scale(chance-5))
-      //        .text(chance.toFixed(1) + "%");
-      //    },
-      //    error: function (result) {
-      //    }
-      //  })
+       if (!author) {
+         return;
+       }
+      const payload = {
+        total_slips,
+        slips_perc_pro: perc_pro / 100,
+        total_sponsors,
+        bipartisan: bipartisan ? 1 : 0,
+        author_is_chair: author.author_is_chair,
+        author_term: author.author_term,
+        author_funding_level: author.author_funding_level
+      }
+       $.ajax({
+         type: "POST",
+         contentType: "application/json; charset=utf-8",
+         url: "/score",
+         dataType: "json",
+         async: true,
+         data: JSON.stringify(payload),
+         success: function (data) {
+           console.log('Score:', data['score'])
+          if (prediction != data['result']) {
+            prediction = data['result']
+            if (prediction === 1) {
+              d3.select("#yes_indicator_svg")
+                .attr("display", 'block');
+              d3.select("#no_indicator_svg")
+                .attr("display", 'none');
+              d3.select('#result-description').text('Highly likely the bill gets a vote')
+              } else {
+                d3.select("#no_indicator_svg")
+                  .attr("display", 'block');
+                d3.select("#yes_indicator_svg")
+                  .attr("display", 'none');
+                d3.select('#result-description').text("Not highly likely. However, 80% of bills get a vote so there is still a good chance.")
+              }
+              d3.select('#ph_indicator_svg').attr('display', 'none')
+            }
+         },
+         error: function (result) {
+         }
+       })
      }
 
     </script>
