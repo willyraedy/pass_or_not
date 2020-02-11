@@ -4,64 +4,24 @@
     <meta charset="utf-8" />
     <title>IL Senate Bill Predictor</title>
     <link rel="stylesheet" href="static/d3.slider.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:700i|PT+Sans|Raleway:900|Varela+Round&display=swap" rel="stylesheet">
     <style>
 
      body {
-       font-family: Verdana,Arial,sans-serif;
+      font-family: 'PT Sans', sans-serif;
      }
 
      .title {
-       font-size: 2em;
+       font-family: 'Montserrat', sans-serif;
+       font-size: 3em;
        margin: 60px 0 5px 0;
        color: gray;
        text-align: center;
      }
 
-     .space {
-       margin-bottom: 30 px;
-     }
-
-     .wrapper {
-       width: 1000px;
-       margin-left: auto;
-       margin-right: auto;
-       margin-bottom: 0px;
-     }
-
-     #bar_chart {
-       margin-bottom: 0 px;
-     }
-
-     .bar {
-       fill: #FF75A3;
-     }
-
      span {
        color: steelblue;
-     }
-
-     .container {
-       display: flex;
-       flex-direction: row;
-       justify-content: center;
-     }
-
-     .result_container {
-       margin-top: 30px;
-       display: flex;
-       flex-direction: row;
-       justify-content: center;
-       align-items: center;
-     }
-
-     .slide_container {
-       width: 600px;
-     }
-
-     .slide_row_container {
-       display: flex;
-       justify-content: space-between;
-       align-items: center;
      }
 
      .unclear_indicator {
@@ -77,60 +37,90 @@
        opacity: 1;
      }
 
+    .feature-label {
+      font-size: 1.2em;
+      margin-bottom: 0;
+    }
+
+    .custom-control-label::before {
+      margin-top: .13em;
+    }
+
+    .custom-control-label::after {
+      margin-top: .13em;
+    }
+
+    .center-children {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .pointer {
+      cursor: pointer;
+    }
     </style>
   </head>
 
   <body>
-    <div class="wrapper">
-      <h1 class='title space'>Will a bill get a vote on the Senate floor?</h1>
-    </div>
-<!--
-    <div>
-      <div id='arc_exp'></div>
-    </div> -->
-
-    <div class='wrapper'>
-      <h2 class='feature'>Who is the author?: <span id='author'>None</span></h2>
-    </div>
-    <div class='container'>
-      <div id='sen_tiles'></div>
+    <div class="container">
+      <h1 class='title space'>Will a bill get a vote on the IL Senate floor?</h1>
     </div>
 
-    <div id="sliders" class="wrapper">
-      <div class='slide_row_container'>
-        <div class='slide_container'>
-          <h2 class="feature">Number of Witness Slips: <span id="total_slips">5</span></h2>
-          <div id="total_slips_slider"></div>
-        </div>
-        <div>
-          <h2 class="feature">Percent Supporting:</h2>
-          <input type="number" min="1" max="100" id="perc_pro" value='80' onchange="handlePercPro(this.value)"/>
-        </div>
-      </div>
-
-      <div class='slide_row_container'>
-        <div class='slide_container'>
-          <h2 class="feature">Number of Co-sponsors: <span id="total_sponsors">2</span></h2>
-          <div id="total_sponsors_slider"></div>
-        </div>
-        <div>
-          <h2 class="feature">Republican Sponsor?:</h2>
-          <input type="radio" id="yes_bip" name="bip" value="1", onchange="handleBipartisan(1)">Yes
-          <input checked type="radio" id="no_bip" name="bip" value="0", onchange="handleBipartisan(0)">No
-        </div>
-      </div>
-
-      <div class="result_container">
+    <div class="container mt-5">
+      <div class='row center-children'>
         <div id='no_indicator'></div>
-        <h2 class='feature unclear_indicator'>Unclear</h2>
         <div id='yes_indicator'></div>
       </div>
     </div>
+
+    <div id="sliders" class="container mt-5">
+      <div class='row'>
+        <div class='col-5'>
+          <h2 class="feature-label mb-2">Number of Co-sponsors: <span id="total_sponsors">2</span></h2>
+          <div id="total_sponsors_slider"></div>
+        </div>
+        <div class='col-2'></div>
+        <div class='col-5'>
+          <h2 class="feature-label mb-2">Number of Witness Slips: <span id="total_slips">5</span></h2>
+          <div id="total_slips_slider"></div>
+        </div>
+      </div>
+      <div class='row mt-5'>
+        <div class='col-5 center-children'>
+          <div class="custom-control custom-switch center-children">
+            <input type="checkbox" class="custom-control-input" id="customSwitch1">
+            <label class="custom-control-label feature-label pointer" for="customSwitch1">Has a Republican Co-Sponsor?</label>
+          </div>
+        </div>
+        <div class='col-2'></div>
+        <div class='col-5'>
+          <div class='row center-children'>
+            <h2 class="feature-label">Percent Supporting:</h2>
+            <div class='col-2'>
+              <input class="form-control form-control-sm" type="number" min="1" max="100" id="perc_pro" value='80' onchange="handlePercPro(this.value)"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class='container my-5'>
+      <div class='row center-children'>
+      <h2 class='feature-label mb-3'>Who is the author?: <span id='author'>None Selected</span></h2>
+        <div id='sen_tiles'></div>
+      </div>
+    </div>
+
+  </div>
 
     <!-- Import the libraries: jQuery, d3, d3.slider -->
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="static/d3.slider.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 
     <script>
     // Set up data
@@ -219,48 +209,51 @@
      let author = null;
 
     // YES NO INDICATOR BUTTONS
-    const yesIndicatorSVG = d3.select("#yes_indicator")
-                   .append("svg:svg")
-                   .attr("width", 120)
-                   .attr("height", 120);
-
-    const yesIndicator = yesIndicatorSVG.append('g')
-    yesIndicator.append("circle")
-        .attr("cx", 60)
-        .attr("cy", 60)
-        .attr("r", 50)
-        .attr("stroke", "black")
-        .style('fill', 'green')
-    yesIndicator.append("text")
-      .attr('id', 'nay_text')
-      .attr('x', 50)
-      .attr('y', 50)
-      .attr("font-size", 20)
+    const indicator_radius = 70
+    const pin = d3.select('#yes_indicator')
+      .append('svg:svg')
+      .attr('width', indicator_radius * 2)
+      .attr('height', indicator_radius * 2)
+    const pin_group = pin.append('g')
+    pin_group.append("svg:image")
+      .attr('class', 'pointer')
+      .attr('x', 0)
+      // .attr('y', 5)
+      .attr('width', indicator_radius * 2)
+      .attr('height', indicator_radius * 2)
+      .attr("xlink:href", 'https://img1.etsystatic.com/133/0/11365624/il_fullxfull.915165345_71x4.jpg')
+    pin_group.append('rect')
+      .attr('x', indicator_radius * .27)
+      .attr('y', indicator_radius * .7)
+      .attr('width', indicator_radius * 1.4)
+      .attr('height', indicator_radius *.6)
       .attr('fill', 'white')
-      .text('Aye')
+    pin_group.append('text')
+      .attr('x', 23)
+      .attr('y', 85)
+      .attr('font-size', 40)
+      .attr('font-family', 'Raleway')
+      .text('YES!')
 
-    const noIndicatorSVG = d3.select("#no_indicator")
-                  .append("svg:svg")
-                  .attr("width", 120)
-                  .attr("height", 120);
-
-    const noIndicator = noIndicatorSVG.append('g')
-    noIndicator.append("circle")
-        .attr("cx", 60)
-        .attr("cy", 60)
-        .attr("r", 50)
-        .attr("stroke", "black")
-        .style('fill', 'red')
-    noIndicator.append("text")
-      .attr('id', 'nay_text')
-      .attr('x', 50)
-      .attr('y', 50)
-      .attr("font-size", 20)
-      .attr('fill', 'white')
-      .text('Nay')
-
-    // Congress people tiles
-    // 13 + 15 + 13 + 11 + 9
+    const pin_no = d3.select('#no_indicator')
+      .append('svg:svg')
+      .attr('width', indicator_radius * 2)
+      .attr('height', indicator_radius * 2)
+    const pin_group_no = pin_no.append('g')
+    pin_group_no.append("svg:image")
+      .attr('class', 'pointer')
+      .attr('x', -25)
+      .attr('y', -25)
+      .attr('width', indicator_radius * 2 + 50)
+      .attr('height', indicator_radius * 2 + 50)
+      .attr("xlink:href", 'https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fwww.publicdomainpictures.net%2Fpictures%2F90000%2Fnahled%2Fgrey-button-for-web.jpg&f=1&nofb=1')
+      pin_group_no.append('text')
+      .attr('x', 28)
+      .attr('y', 90)
+      .attr('font-size', 60)
+      .attr('font-family', 'Raleway')
+      .style('fill', 'lightgray')
+      .text('???')
 
     let sen_height = 700
     let sen_width = 1200
@@ -302,10 +295,9 @@
     tiles
       .append('rect')
       .attr('rx', 5)
-      .attr('fill', (d) => d.party === 'D' ? 'blue' : 'red')
+      .attr('fill', (d) => d.party === 'D' ? '#C1DFF3' : '#F0BAB9')
       .attr('height', tile_height - 2)
       .attr('width', tile_width - 2)
-      .style('opacity', 0.3)
       .on('click', (d) => {
         author = d
         d3.select('#author').text(d.name)
@@ -323,6 +315,7 @@
         getAndDrawChance()
       })
     tiles.append("svg:image")
+      .attr('class', 'pointer')
       .attr('x', 0)
       .attr('y', 5)
       .attr('width', tile_width - 2)
@@ -353,7 +346,6 @@
           .value(total_slips)
           .step(1)
           .axis(true)
-          // .attr('width', 600)
           .on("slide", function(evt,value) {
             d3.select('#total_slips').text(value);
             total_slips = value;
@@ -367,6 +359,7 @@
         .value(total_sponsors)
         .step(1)
         .axis(true)
+        .max(20)
         .on("slide", function(evt,value) {
           d3.select('#total_sponsors').text(value);
           total_sponsors = value;
