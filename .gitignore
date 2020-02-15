@@ -1,2 +1,4 @@
 secrets_.py
 data/*
+*.pickle
+*.mov

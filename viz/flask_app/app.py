@@ -5,7 +5,7 @@ import pandas as pd
 
 #---------- MODEL IN MEMORY ----------------#
 
-with open('./finalModel.pickle', 'rb') as read_file:
+with open('./finalVotingModel.pickle', 'rb') as read_file:
     PREDICTOR = pickle.load(read_file)
 
 
@@ -36,7 +36,7 @@ def score():
     inputs = pd.DataFrame([dict(data)])
     score = PREDICTOR.predict_proba(inputs)
     # Put the result in a nice dict so we can send it as json
-    results = {"result": 1 if score[:, 1][0] > 0.75 else 0, 'score': score[:, 1][0] }
+    results = {"result": 1 if score[:, 1][0] > 0.55 else 0, 'score': score[:, 1][0] }
     return flask.jsonify(results)
 
 #--------- RUN WEB APP SERVER ------------#
